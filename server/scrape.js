@@ -1,15 +1,34 @@
 var fs = require('fs'),
     request = require('request');
+const cheerio = require('cheerio');
+
+var urlToDownload;
 
 var download = function(uri, filename, callback){
-  request.head(uri, function(err, res, body){
-    console.log('content-type:', res.headers['content-type']);
-    console.log('content-length:', res.headers['content-length']);
+    request.head(uri, function(err, res, body){
+      console.log('content-type:', res.headers['content-type']);
+      console.log('content-length:', res.headers['content-length']);
+  
+      request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
+    });
+  };
 
-    request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
-  });
-};
+request({
+    method: 'GET',
+    url: 'http://explosm.net/comics/5639/'
+}, (err, res, body) => {
 
-download('http://files.explosm.net/comics/Dave/lovethyneighborbigger.png?t=ADB5D8', './images/comic.png', function(){
-  console.log('done');
+    if (err) return console.error(err);
+
+    let $ = cheerio.load(body);
+
+    let comicURL = $('#main-comic').attr('src');
+
+    urlToDownload = `http:${comicURL}`;
+
+    download(urlToDownload, './images/comic.png', function(){
+        console.log('done');
+      });
+    
 });
+
